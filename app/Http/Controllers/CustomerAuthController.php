@@ -24,6 +24,12 @@ class CustomerAuthController extends Controller
         $phone = $request->input('phone');
         $address = $request->input('address');
 
+        if (!preg_match('/^01[0-9]{9}$/', $phone)) {
+            return back()
+                ->with('error', 'Invalid Phone Number. Must be 11 digits starting with 01.')
+                ->withInput();
+        }
+
         $check = DB::select("SELECT COUNT(*) as total FROM CUSTOMER WHERE Username=? OR Email=?", [$username, $email]);
 
         if ($check[0]->total > 0) {
@@ -122,6 +128,6 @@ public function logout(Request $request): \Illuminate\Http\RedirectResponse
     $request->session()->regenerateToken();
 
     return redirect()->route('customer.login');
-}   
+}
 
 }

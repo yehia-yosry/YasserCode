@@ -37,58 +37,59 @@ class AdminController extends Controller
         // Manual validation
         $errors = [];
 
-        // Validate ISBN
-        if (empty($request->isbn)) {
+        // 1. FIX: Use $request->ISBN (matches HTML name="ISBN")
+        if (empty($request->ISBN)) {
             $errors[] = "ISBN is required";
-        } elseif (strlen($request->isbn) != 13) {
+        } elseif (strlen($request->ISBN) != 13) {
             $errors[] = "ISBN must be 13 characters";
         }
 
-        // Validate Title
-        if (empty($request->title)) {
+        // 2. FIX: Use $request->Title
+        if (empty($request->Title)) {
             $errors[] = "Title is required";
         }
 
-        // Validate Publication Year
-        if (empty($request->publication_year)) {
+        // 3. FIX: Use $request->PublicationYear (matches HTML name="PublicationYear")
+        if (empty($request->PublicationYear)) {
             $errors[] = "Publication year is required";
-        } elseif (!is_numeric($request->publication_year)) {
+        } elseif (!is_numeric($request->PublicationYear)) {
             $errors[] = "Publication year must be numeric";
         }
 
-        // Validate Price
-        if (empty($request->price)) {
+        // 4. FIX: Use $request->Price
+        if (empty($request->Price)) {
             $errors[] = "Price is required";
-        } elseif (!is_numeric($request->price) || $request->price < 0) {
+        } elseif (!is_numeric($request->Price) || $request->Price < 0) {
             $errors[] = "Price must be a positive number";
         }
 
-        // Validate Quantity
-        if (!isset($request->quantity)) {
+        // 5. FIX: Use $request->Quantity
+        // use isset() because quantity 0 is valid but empty(0) is true
+        if (!isset($request->Quantity)) {
             $errors[] = "Quantity is required";
-        } elseif (!is_numeric($request->quantity) || $request->quantity < 0) {
+        } elseif (!is_numeric($request->Quantity) || $request->Quantity < 0) {
             $errors[] = "Quantity must be a non-negative number";
         }
 
-        // Validate Threshold
-        if (!isset($request->threshold)) {
+        // 6. FIX: Use $request->Threshold
+        if (!isset($request->Threshold)) {
             $errors[] = "Threshold is required";
-        } elseif (!is_numeric($request->threshold) || $request->threshold < 0) {
+        } elseif (!is_numeric($request->Threshold) || $request->Threshold < 0) {
             $errors[] = "Threshold must be a non-negative number";
         }
 
-        // Validate Category
-        if (empty($request->category_id)) {
+        // 7. FIX: Use $request->CategoryID
+        if (empty($request->CategoryID)) {
             $errors[] = "Category is required";
         }
 
-        // Validate Publisher
-        if (empty($request->publisher_id)) {
+        // 8. FIX: Use $request->PublisherID
+        if (empty($request->PublisherID)) {
             $errors[] = "Publisher is required";
         }
 
-        // Validate Authors
-        if (empty($request->author_ids)) {
+        // 9. FIX: Use $request->AuthorIDs (Matches new HTML input)
+        if (empty($request->AuthorIDs)) {
             $errors[] = "At least one author is required";
         }
 
@@ -101,31 +102,33 @@ class AdminController extends Controller
             DB::beginTransaction();
 
             // Check if ISBN already exists
-            $existing = DB::select("SELECT ISBN FROM BOOK WHERE ISBN = ?", [$request->isbn]);
+            $existing = DB::select("SELECT ISBN FROM BOOK WHERE ISBN = ?", [$request->ISBN]);
             if (!empty($existing)) {
                 throw new Exception("Book with this ISBN already exists");
             }
 
             // Insert book
-            DB::insert("INSERT INTO BOOK (ISBN, Title, PublicationYear, Price, Quantity, Threshold, CategoryID, PublisherID) 
+            // FIX: Using correct $request->VariableNames
+            DB::insert("INSERT INTO BOOK (ISBN, Title, PublicationYear, Price, Quantity, Threshold, CategoryID, PublisherID)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [
-                    $request->isbn,
-                    $request->title,
-                    $request->publication_year,
-                    $request->price,
-                    $request->quantity,
-                    $request->threshold,
-                    $request->category_id,
-                    $request->publisher_id
+                    $request->ISBN,
+                    $request->Title,
+                    $request->PublicationYear,
+                    $request->Price,
+                    $request->Quantity,
+                    $request->Threshold,
+                    $request->CategoryID,
+                    $request->PublisherID
                 ]
             );
 
             // Insert book-author relationships
-            foreach ($request->author_ids as $author_id) {
+            // FIX: Loop through $request->AuthorIDs
+            foreach ($request->AuthorIDs as $author_id) {
                 DB::insert(
                     "INSERT INTO BOOK_AUTHOR (ISBN, AuthorID) VALUES (?, ?)",
-                    [$request->isbn, $author_id]
+                    [$request->ISBN, $author_id]
                 );
             }
 
@@ -148,7 +151,7 @@ class AdminController extends Controller
 
         if (!empty($search_term)) {
             // Search by ISBN or Title
-            $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName 
+            $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName
                                 FROM BOOK B
                                 JOIN CATEGORY C ON B.CategoryID = C.CategoryID
                                 JOIN PUBLISHER P ON B.PublisherID = P.PublisherID
@@ -191,30 +194,36 @@ class AdminController extends Controller
     }
 
     // Update book details
+    // Update book details
     public function updateBook(Request $request, $isbn)
     {
         // Manual validation
         $errors = [];
 
-        if (!empty($request->title) && empty(trim($request->title))) {
+        // FIX: Changed to $request->Title (PascalCase)
+        if (!empty($request->Title) && empty(trim($request->Title))) {
             $errors[] = "Title cannot be empty";
         }
 
-        if (!empty($request->publication_year) && !is_numeric($request->publication_year)) {
+        // FIX: Changed to $request->PublicationYear
+        if (!empty($request->PublicationYear) && !is_numeric($request->PublicationYear)) {
             $errors[] = "Publication year must be numeric";
         }
 
-        if (!empty($request->price) && (!is_numeric($request->price) || $request->price < 0)) {
+        // FIX: Changed to $request->Price
+        if (!empty($request->Price) && (!is_numeric($request->Price) || $request->Price < 0)) {
             $errors[] = "Price must be a positive number";
         }
 
-        if (isset($request->quantity)) {
-            if (!is_numeric($request->quantity) || $request->quantity < 0) {
+        // FIX: Changed to $request->Quantity
+        if (isset($request->Quantity)) {
+            if (!is_numeric($request->Quantity) || $request->Quantity < 0) {
                 $errors[] = "Quantity must be a non-negative number";
             }
         }
 
-        if (isset($request->threshold) && (!is_numeric($request->threshold) || $request->threshold < 0)) {
+        // FIX: Changed to $request->Threshold
+        if (isset($request->Threshold) && (!is_numeric($request->Threshold) || $request->Threshold < 0)) {
             $errors[] = "Threshold must be a non-negative number";
         }
 
@@ -225,43 +234,45 @@ class AdminController extends Controller
         try {
             DB::beginTransaction();
 
-            // Build dynamic update query based on provided fields
             $updates = [];
             $params = [];
 
-            if (!empty($request->title)) {
+            // FIX: Checking PascalCase variables
+            if (!empty($request->Title)) {
                 $updates[] = "Title = ?";
-                $params[] = $request->title;
+                $params[] = $request->Title;
             }
 
-            if (!empty($request->publication_year)) {
+            if (!empty($request->PublicationYear)) {
                 $updates[] = "PublicationYear = ?";
-                $params[] = $request->publication_year;
+                $params[] = $request->PublicationYear;
             }
 
-            if (!empty($request->price)) {
+            if (!empty($request->Price)) {
                 $updates[] = "Price = ?";
-                $params[] = $request->price;
+                $params[] = $request->Price;
             }
 
-            if (isset($request->quantity)) {
+            if (isset($request->Quantity)) {
                 $updates[] = "Quantity = ?";
-                $params[] = $request->quantity;
+                $params[] = $request->Quantity;
             }
 
-            if (isset($request->threshold)) {
+            if (isset($request->Threshold)) {
                 $updates[] = "Threshold = ?";
-                $params[] = $request->threshold;
+                $params[] = $request->Threshold;
             }
 
-            if (!empty($request->category_id)) {
+            // FIX: Changed to $request->CategoryID
+            if (!empty($request->CategoryID)) {
                 $updates[] = "CategoryID = ?";
-                $params[] = $request->category_id;
+                $params[] = $request->CategoryID;
             }
 
-            if (!empty($request->publisher_id)) {
+            // FIX: Changed to $request->PublisherID
+            if (!empty($request->PublisherID)) {
                 $updates[] = "PublisherID = ?";
-                $params[] = $request->publisher_id;
+                $params[] = $request->PublisherID;
             }
 
             // Execute update if there are changes
@@ -271,13 +282,13 @@ class AdminController extends Controller
                 DB::update($sql, $params);
             }
 
-            // Update authors if provided
-            if (!empty($request->author_ids)) {
+            // FIX: Changed to $request->AuthorIDs (Matches Create form)
+            if (!empty($request->AuthorIDs)) {
                 // Delete existing author relationships
                 DB::delete("DELETE FROM BOOK_AUTHOR WHERE ISBN = ?", [$isbn]);
 
                 // Insert new author relationships
-                foreach ($request->author_ids as $author_id) {
+                foreach ($request->AuthorIDs as $author_id) {
                     DB::insert(
                         "INSERT INTO BOOK_AUTHOR (ISBN, AuthorID) VALUES (?, ?)",
                         [$isbn, $author_id]
@@ -355,7 +366,7 @@ class AdminController extends Controller
             try {
                 if ($search_type == 'isbn') {
                     // Search by ISBN
-                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName 
+                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName
                                         FROM BOOK B
                                         JOIN CATEGORY C ON B.CategoryID = C.CategoryID
                                         JOIN PUBLISHER P ON B.PublisherID = P.PublisherID
@@ -363,7 +374,7 @@ class AdminController extends Controller
 
                 } elseif ($search_type == 'title') {
                     // Search by Title
-                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName 
+                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName
                                         FROM BOOK B
                                         JOIN CATEGORY C ON B.CategoryID = C.CategoryID
                                         JOIN PUBLISHER P ON B.PublisherID = P.PublisherID
@@ -371,7 +382,7 @@ class AdminController extends Controller
 
                 } elseif ($search_type == 'category') {
                     // Search by Category
-                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName 
+                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName
                                         FROM BOOK B
                                         JOIN CATEGORY C ON B.CategoryID = C.CategoryID
                                         JOIN PUBLISHER P ON B.PublisherID = P.PublisherID
@@ -379,7 +390,7 @@ class AdminController extends Controller
 
                 } elseif ($search_type == 'author') {
                     // Search by Author
-                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName 
+                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName
                                         FROM BOOK B
                                         JOIN CATEGORY C ON B.CategoryID = C.CategoryID
                                         JOIN PUBLISHER P ON B.PublisherID = P.PublisherID
@@ -389,7 +400,7 @@ class AdminController extends Controller
 
                 } elseif ($search_type == 'publisher') {
                     // Search by Publisher
-                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName 
+                    $books = DB::select("SELECT B.*, C.CategoryName, P.Name as PublisherName
                                         FROM BOOK B
                                         JOIN CATEGORY C ON B.CategoryID = C.CategoryID
                                         JOIN PUBLISHER P ON B.PublisherID = P.PublisherID
@@ -398,7 +409,7 @@ class AdminController extends Controller
 
                 // Get authors for each book
                 foreach ($books as $book) {
-                    $authors = DB::select("SELECT A.AuthorName 
+                    $authors = DB::select("SELECT A.AuthorName
                                           FROM AUTHOR A
                                           JOIN BOOK_AUTHOR BA ON A.AuthorID = BA.AuthorID
                                           WHERE BA.ISBN = ?", [$book->ISBN]);
@@ -481,7 +492,7 @@ class AdminController extends Controller
         $three_months_ago = DB::select("SELECT DATE_SUB(CURDATE(), INTERVAL 3 MONTH) as date")[0]->date;
 
         // Get top 5 customers by total purchase amount
-        $customers = DB::select("SELECT C.CustomerID, C.FirstName, C.LastName, C.Email, 
+        $customers = DB::select("SELECT C.CustomerID, C.FirstName, C.LastName, C.Email,
                                        COALESCE(SUM(CO.TotalPrice), 0) as total_spent
                                 FROM CUSTOMER C
                                 LEFT JOIN CUSTOMER_ORDER CO ON C.CustomerID = CO.CustomerID
